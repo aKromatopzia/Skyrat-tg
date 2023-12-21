@@ -59,6 +59,7 @@
 	if(restyle_flags)
 		RegisterSignal(src, COMSIG_ATOM_RESTYLE, PROC_REF(on_attempt_feature_restyle))
 
+<<<<<<< HEAD
 /obj/item/organ/external/Destroy()
 	if(owner)
 		Remove(owner, special = TRUE)
@@ -68,6 +69,18 @@
 	return ..()
 
 /obj/item/organ/external/Insert(mob/living/carbon/receiver, special, drop_if_replaced)
+=======
+/obj/item/organ/external/Insert(mob/living/carbon/receiver, special, movement_flags)
+	. = ..()
+	receiver.update_body_parts()
+
+/obj/item/organ/external/Remove(mob/living/carbon/organ_owner, special, movement_flags)
+	. = ..()
+	if(!special)
+		organ_owner.update_body_parts()
+
+/obj/item/organ/external/mob_insert(mob/living/carbon/receiver, special, movement_flags)
+>>>>>>> c340a605065 (Lizard spines no longer "float" on characters without lizard tails. (#80456))
 	if(!should_external_organ_apply_to(type, receiver))
 		stack_trace("adding a [type] to a [receiver.type] when it shouldn't be!")
 
