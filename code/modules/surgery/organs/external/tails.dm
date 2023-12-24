@@ -17,10 +17,8 @@
 	var/wag_flags = NONE
 	///The original owner of this tail
 	var/original_owner //Yay, snowflake code!
-	///The overlay for tail spines, if any
-	var/datum/bodypart_overlay/mutant/tail_spines/tail_spines_overlay
 
-/obj/item/organ/external/tail/Insert(mob/living/carbon/receiver, special, drop_if_replaced)
+/obj/item/organ/external/tail/Insert(mob/living/carbon/receiver, special, movement_flags)
 	. = ..()
 	if(.)
 		RegisterSignal(receiver, COMSIG_ORGAN_WAG_TAIL, PROC_REF(wag))
@@ -34,56 +32,11 @@
 		else if(type in receiver.dna.species.external_organs)
 			receiver.add_mood_event("wrong_tail_regained", /datum/mood_event/tail_regained_wrong)
 
-<<<<<<< HEAD
-/obj/item/organ/external/tail/Remove(mob/living/carbon/organ_owner, special, moving)
-=======
-/obj/item/organ/external/tail/on_bodypart_insert(obj/item/bodypart/bodypart)
-	var/obj/item/organ/external/spines/our_spines = bodypart.owner.get_organ_slot(ORGAN_SLOT_EXTERNAL_SPINES)
-	if(our_spines)
-		try_insert_tail_spines(bodypart)
-	return ..()
-
-/obj/item/organ/external/tail/on_bodypart_remove(obj/item/bodypart/bodypart)
-	remove_tail_spines(bodypart)
-	return ..()
-
-/// If the owner has spines and an appropriate overlay exists, add a tail spines overlay.
-/obj/item/organ/external/tail/proc/try_insert_tail_spines(obj/item/bodypart/bodypart)
-	// Don't insert another overlay if there already is one.
-	if(tail_spines_overlay)
-		return
-	// If this tail doesn't have a valid set of tail spines, don't insert them
-	var/datum/sprite_accessory/tails/tail_sprite_datum = bodypart_overlay.sprite_datum
-	if(!istype(tail_sprite_datum))
-		return
-	var/tail_spine_key = tail_sprite_datum.spine_key
-	if(!tail_spine_key)
-		return
-
-	tail_spines_overlay = new
-	tail_spines_overlay.tail_spine_key = tail_spine_key
-	var/feature_name = bodypart.owner.dna.features["spines"] //tail spines don't live in DNA, but share feature names with regular spines
-	tail_spines_overlay.set_appearance_from_name(feature_name)
-	bodypart.add_bodypart_overlay(tail_spines_overlay)
-
-/// If we have a tail spines overlay, delete it
-/obj/item/organ/external/tail/proc/remove_tail_spines(obj/item/bodypart/bodypart)
-	if(!tail_spines_overlay)
-		return
-	bodypart.remove_bodypart_overlay(tail_spines_overlay)
-	QDEL_NULL(tail_spines_overlay)
-
 /obj/item/organ/external/tail/on_mob_remove(mob/living/carbon/organ_owner, special)
 	. = ..()
 
->>>>>>> c340a605065 (Lizard spines no longer "float" on characters without lizard tails. (#80456))
 	if(wag_flags & WAG_WAGGING)
 		wag(organ_owner, start = FALSE)
-
-	return ..()
-
-/obj/item/organ/external/tail/on_remove(mob/living/carbon/organ_owner, special)
-	. = ..()
 
 	UnregisterSignal(organ_owner, COMSIG_ORGAN_WAG_TAIL)
 
@@ -111,8 +64,6 @@
 	var/datum/bodypart_overlay/mutant/tail/accessory = bodypart_overlay
 	wag_flags |= WAG_WAGGING
 	accessory.wagging = TRUE
-	if(tail_spines_overlay) //if there are spines, they should wag with the tail
-		tail_spines_overlay.wagging = TRUE
 	organ_owner.update_body_parts()
 	RegisterSignal(organ_owner, COMSIG_LIVING_DEATH, PROC_REF(stop_wag))
 	return TRUE
@@ -124,8 +75,6 @@
 	var/datum/bodypart_overlay/mutant/tail/accessory = bodypart_overlay
 	wag_flags &= ~WAG_WAGGING
 	accessory.wagging = FALSE
-	if(tail_spines_overlay) //if there are spines, they should stop wagging with the tail
-		tail_spines_overlay.wagging = FALSE
 	if(isnull(organ_owner))
 		return
 
@@ -186,17 +135,16 @@
 	bodypart_overlay = /datum/bodypart_overlay/mutant/tail/lizard
 
 	wag_flags = WAG_ABLE
-<<<<<<< HEAD
 	///A reference to the paired_spines, since for some fucking reason tail spines are tied to the spines themselves.
 	var/obj/item/organ/external/spines/paired_spines
 
-/obj/item/organ/external/tail/lizard/Insert(mob/living/carbon/reciever, special, drop_if_replaced)
+/obj/item/organ/external/tail/lizard/Insert(mob/living/carbon/receiver, special, movement_flags)
 	. = ..()
 	if(.)
-		paired_spines = ownerlimb.owner.get_organ_slot(ORGAN_SLOT_EXTERNAL_SPINES)
+		paired_spines = bodypart_owner.owner.get_organ_slot(ORGAN_SLOT_EXTERNAL_SPINES)
 		paired_spines?.paired_tail = src
 
-/obj/item/organ/external/tail/lizard/Remove(mob/living/carbon/organ_owner, special, moving)
+/obj/item/organ/external/tail/lizard/Remove(mob/living/carbon/organ_owner, special, movement_flags)
 	. = ..()
 	if(paired_spines)
 		paired_spines.paired_tail = null
@@ -213,9 +161,6 @@
 		var/datum/bodypart_overlay/mutant/spines/accessory = paired_spines.bodypart_overlay
 		accessory.wagging = FALSE
 	return ..()
-=======
-	dna_block = DNA_LIZARD_TAIL_BLOCK
->>>>>>> c340a605065 (Lizard spines no longer "float" on characters without lizard tails. (#80456))
 
 ///Lizard tail bodypart overlay datum
 /datum/bodypart_overlay/mutant/tail/lizard
@@ -227,23 +172,3 @@
 /obj/item/organ/external/tail/lizard/fake
 	name = "fabricated lizard tail"
 	desc = "A fabricated severed lizard tail. This one's made of synthflesh. Probably not usable for lizard wine."
-
-///Bodypart overlay for tail spines. Handled by the tail - has no actual organ associated.
-/datum/bodypart_overlay/mutant/tail_spines
-	layers = EXTERNAL_ADJACENT|EXTERNAL_BEHIND
-	feature_key = "tailspines"
-	///Spines wag when the tail does
-	var/wagging = FALSE
-	/// Key for tail spine states, depends on the shape of the tail. Defined in the tail sprite datum.
-	var/tail_spine_key = NONE
-
-/datum/bodypart_overlay/mutant/tail_spines/get_global_feature_list()
-	return GLOB.tail_spines_list
-
-/datum/bodypart_overlay/mutant/tail_spines/get_base_icon_state()
-	return (!isnull(tail_spine_key) ? "[tail_spine_key]_" : "") + (wagging ? "wagging_" : "") + sprite_datum.icon_state // Select the wagging state if appropriate
-
-/datum/bodypart_overlay/mutant/tail_spines/can_draw_on_bodypart(mob/living/carbon/human/human)
-	. = ..()
-	if(human.wear_suit && (human.wear_suit.flags_inv & HIDEJUMPSUIT))
-		return FALSE
